@@ -1,0 +1,5 @@
+/bin
+/go-api
+*.exe
+*.test
+*.out

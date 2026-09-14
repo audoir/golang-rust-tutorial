@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Golang / Rust API Tutorial
 
-## Getting Started
+A hands-on tutorial that walks through building CRUD APIs in different systems languages. Each chapter lives in its own sub-folder and is demonstrated through a shared Next.js UI.
 
-First, run the development server:
+Chapter 1 covers **Go**. Future chapters will add **Rust** as a second tab, so you can compare the two languages side by side.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## Table of Contents
+
+1. [Project Structure](#project-structure)
+2. [Quick Start](#quick-start)
+3. [Chapter 1 — Go](#chapter-1--go)
+4. [Adding a New Chapter](#adding-a-new-chapter)
+
+---
+
+## Project Structure
+
+```
+golang-rust-tutorial/
+├── app/             # Next.js app (shared UI shell + tab navigation)
+│   ├── components/
+│   │   ├── GoCrud.tsx        # Chapter 1 — Go CRUD demo
+│   │   ├── PageHeader.tsx
+│   │   └── TabNavigation.tsx
+│   ├── layout.tsx
+│   └── page.tsx
+├── go-api/          # Go REST API (chi router, Go modules)          → port 3005
+├── docs/            # Per-chapter documentation
+│   └── go.md
+└── scripts/
+    └── start-servers.sh  # Starts all tutorial servers (Ctrl-C to stop all)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quick Start
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Prerequisites
 
-## Learn More
+- **Node.js ≥ 20.9** (required by Next.js 16)
+- **npm** (comes with Node.js)
+- **Go ≥ 1.21** (for the Go chapter)
 
-To learn more about Next.js, take a look at the following resources:
+Install Go if you don't have it (macOS via Homebrew):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+brew install go
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Install dependencies
 
-## Deploy on Vercel
+```bash
+# Next.js (repo root)
+npm install
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Go — download dependencies once (go.sum is committed)
+cd go-api && go mod download
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Run all servers
+
+From the **repo root**:
+
+```bash
+./scripts/start-servers.sh
+```
+
+Then open **http://localhost:3000** in your browser.
+
+> The script starts every tutorial server in the background and kills them all when you press Ctrl-C.
+>
+> You can also start each server manually:
+> - Next.js: `npm run dev` → http://localhost:3000
+> - Go: `cd go-api && go run .` → http://localhost:3005
+
+---
+
+## Chapter 1 — Go
+
+The Go chapter builds a simple CRUD API with [chi](https://github.com/go-chi/chi) (a lightweight HTTP router) and [go-playground/validator](https://github.com/go-playground/validator) (struct-tag-based request validation).
+
+See **[docs/go.md](docs/go.md)** for the full guided tour: project setup with Go modules, how the router and handlers work, validation, and how the UI connects to the API.
+
+Quick test with `curl` once the server is running:
+
+```bash
+curl http://localhost:3005/api/items
+
+curl -X POST http://localhost:3005/api/items \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Go Item","description":"Created via curl"}'
+```
+
+---
+
+## Adding a New Chapter
+
+This project is set up to grow one language/framework at a time. To add the next chapter (e.g. Rust):
+
+1. Create a new API project (e.g. `rust-api/`) on its own port.
+2. Add a new CRUD component under `app/components/` (e.g. `RustCrud.tsx`), following the pattern in `app/components/GoCrud.tsx`.
+3. Add the new tab to the `MainTab` type and `TABS` array in `app/components/TabNavigation.tsx`.
+4. Render the new component conditionally in `app/page.tsx`, following the existing `go-crud` example.
+5. Add a new doc file under `docs/` (e.g. `docs/rust.md`) and link it from this README.
+6. Add the new server to `scripts/start-servers.sh` so `./scripts/start-servers.sh` starts it alongside the others.
