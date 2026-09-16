@@ -1,6 +1,6 @@
-// Package main implements a simple CRUD API using chi, the Go equivalent of
-// Express in this tutorial: a minimal, unopinionated router with an explicit
-// middleware pipeline that you wire up yourself.
+// Package main implements a simple CRUD API using chi: a minimal,
+// unopinionated router with an explicit middleware pipeline that you wire up
+// yourself.
 package main
 
 import (
@@ -18,13 +18,12 @@ func main() {
 	r := chi.NewRouter()
 
 	// ── Middleware ────────────────────────────────────────────────────────────
-	// chi.Middlewares are the same concept as Express middleware — functions
-	// that run before the route handler for every matching request.
+	// Each middleware is a function that wraps the next handler in the chain
+	// and runs before the route handler for every matching request.
 	r.Use(middleware.Logger)    // logs method, path, status, and latency
 	r.Use(middleware.Recoverer) // recovers from panics with a 500 instead of crashing
 
-	// Allow requests from the Next.js dev server (port 3000), the same job
-	// `cors({ origin: "http://localhost:3000" })` does in Express.
+	// Allow requests from the Next.js dev server (port 3000).
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},

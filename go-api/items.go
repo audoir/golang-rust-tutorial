@@ -9,8 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// Item is the shape of a resource, identical to the `Item` interface/type
-// used across every other tab in this tutorial.
+// Item is the shape of a resource returned by the API.
 type Item struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
@@ -18,8 +17,8 @@ type Item struct {
 }
 
 // ── In-memory store ───────────────────────────────────────────────────────────
-// Same pattern as every other tab: a plain in-memory collection guarded by a
-// mutex (the Go equivalent of Python's `threading.Lock()`), reset on restart.
+// A plain in-memory collection guarded by a mutex, reset on restart. Good
+// enough for a tutorial, not for production.
 type itemStore struct {
 	mu     sync.Mutex
 	items  map[int]*Item
@@ -102,8 +101,7 @@ func (s *itemStore) delete(id int) (*Item, bool) {
 }
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
-// itemsAPI groups the store together with its HTTP handlers, the closest Go
-// equivalent of a NestJS controller class.
+// itemsAPI groups the store together with its HTTP handlers.
 type itemsAPI struct {
 	store *itemStore
 }

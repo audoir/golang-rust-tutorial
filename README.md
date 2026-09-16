@@ -1,8 +1,8 @@
 # Golang / Rust API Tutorial
 
-A hands-on tutorial that walks through building CRUD APIs in different systems languages. Each chapter lives in its own sub-folder and is demonstrated through a shared Next.js UI.
+A hands-on tutorial for developers who already know **TypeScript** and/or **Python** and want to learn systems languages by building the same simple CRUD API in each one. Each chapter lives in its own sub-folder and is demonstrated through a shared Next.js UI.
 
-Chapter 1 covers **Go**. Future chapters will add **Rust** as a second tab, so you can compare the two languages side by side.
+**Chapter 1 covers Go.** It starts with Go language fundamentals — syntax, error handling, structs, goroutines — explained by comparison to TypeScript/Python, then walks through a real CRUD API built with those concepts. Future chapters will add **Rust** as a second tab, so you can compare all three languages side by side.
 
 ---
 
@@ -79,9 +79,24 @@ Then open **http://localhost:3000** in your browser.
 
 ## Chapter 1 — Go
 
-The Go chapter builds a simple CRUD API with [chi](https://github.com/go-chi/chi) (a lightweight HTTP router) and [go-playground/validator](https://github.com/go-playground/validator) (struct-tag-based request validation).
+If you're new to Go, **start with [docs/go.md](docs/go.md)** — it's written specifically for TypeScript/Python developers and covers, in order:
 
-See **[docs/go.md](docs/go.md)** for the full guided tour: project setup with Go modules, how the router and handlers work, validation, and how the UI connects to the API.
+**Part 1 — Go language basics**, explained by comparison to what you already know:
+- Why Go looks and behaves differently from TS/Python (compiled vs. interpreted, static typing, etc.)
+- Packages, variables, zero values, and `:=`
+- Functions with multiple return values
+- Error handling without exceptions (`if err != nil`, no `try`/`catch`)
+- Structs and methods (Go's alternative to classes)
+- Interfaces (structural typing, satisfied implicitly)
+- Slices and maps
+- **Goroutines** — Go's lightweight concurrency primitive, and how it differs from JS's event loop and Python's `asyncio`/GIL
+- Struct tags — how Go expresses metadata like JSON field names and validation rules
+
+**Part 2 — The CRUD API**, built with [chi](https://github.com/go-chi/chi) (a lightweight HTTP router) and [go-playground/validator](https://github.com/go-playground/validator) (struct-tag-based request validation):
+- Project setup with Go modules
+- How the router, handlers, and in-memory store work
+- Request validation
+- How the Next.js UI talks to the Go server
 
 Quick test with `curl` once the server is running:
 
@@ -97,11 +112,11 @@ curl -X POST http://localhost:3005/api/items \
 
 ## Adding a New Chapter
 
-This project is set up to grow one language/framework at a time. To add the next chapter (e.g. Rust):
+This project is set up to grow one language at a time. To add the next chapter (e.g. Rust):
 
 1. Create a new API project (e.g. `rust-api/`) on its own port.
 2. Add a new CRUD component under `app/components/` (e.g. `RustCrud.tsx`), following the pattern in `app/components/GoCrud.tsx`.
 3. Add the new tab to the `MainTab` type and `TABS` array in `app/components/TabNavigation.tsx`.
 4. Render the new component conditionally in `app/page.tsx`, following the existing `go-crud` example.
-5. Add a new doc file under `docs/` (e.g. `docs/rust.md`) and link it from this README.
+5. Add a new doc file under `docs/` (e.g. `docs/rust.md`), written the same way as `docs/go.md`: language fundamentals first (compared to whatever the reader already knows), then the API walkthrough. Link it from this README.
 6. Add the new server to `scripts/start-servers.sh` so `./scripts/start-servers.sh` starts it alongside the others.

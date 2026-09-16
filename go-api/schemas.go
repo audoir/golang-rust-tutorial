@@ -6,22 +6,19 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// validate is a single shared validator instance, analogous to a Zod schema
-// object or a Pydantic BaseModel — it is defined once and reused for every
-// request.
+// validate is a single shared validator instance — it is defined once and
+// reused for every request.
 var validate = validator.New()
 
-// CreateItemInput mirrors the Zod `createItemSchema` / Pydantic
-// `CreateItemSchema` used in the other tabs. Struct tags describe the
-// validation rules declaratively, the same way `z.string().min(2).max(100)`
-// or a Pydantic `@field_validator` does.
+// CreateItemInput describes the shape of a valid "create" request body.
+// Struct tags describe the validation rules declaratively — no separate
+// schema object or class is needed.
 type CreateItemInput struct {
 	Name        string `json:"name" validate:"required,min=2,max=100"`
 	Description string `json:"description" validate:"omitempty,max=500"`
 }
 
-// UpdateItemInput backs PUT (full update) — name is required, just like the
-// other frameworks' "update" schema.
+// UpdateItemInput backs PUT (full update) — name is required.
 type UpdateItemInput struct {
 	Name        string `json:"name" validate:"required,min=2,max=100"`
 	Description string `json:"description" validate:"omitempty,max=500"`
@@ -29,14 +26,13 @@ type UpdateItemInput struct {
 
 // PatchItemInput backs PATCH (partial update) — every field is optional, so
 // pointers are used to distinguish "field omitted" from "field set to zero
-// value" (the Go equivalent of Zod's `.optional()` / Pydantic's `Optional[str] = None`).
+// value".
 type PatchItemInput struct {
 	Name        *string `json:"name" validate:"omitempty,min=2,max=100"`
 	Description *string `json:"description" validate:"omitempty,max=500"`
 }
 
-// Sanitize trims whitespace from the name before validation runs, mirroring
-// the `.strip()` calls in the Pydantic field validators.
+// Sanitize trims whitespace from the name before validation runs.
 func (c *CreateItemInput) Sanitize() {
 	c.Name = strings.TrimSpace(c.Name)
 }
@@ -53,8 +49,8 @@ func (p *PatchItemInput) Sanitize() {
 }
 
 // firstValidationError extracts a single human-readable message from the
-// first failing field, the same way the TS tabs read `err.issues[0].message`
-// and the Python tabs read `exc.errors()[0]["msg"]`.
+// first failing field, so the client gets one clean message instead of a
+// raw Go error value.
 func firstValidationError(err error) string {
 	verrs, ok := err.(validator.ValidationErrors)
 	if !ok || len(verrs) == 0 {
