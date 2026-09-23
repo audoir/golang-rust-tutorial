@@ -26,9 +26,21 @@ golang-rust-tutorial/
 │   │   └── TabNavigation.tsx
 │   ├── layout.tsx
 │   └── page.tsx
-├── go-api/          # Go REST API (chi router, Go modules)          → port 3005
+├── go-api/          # Go REST API                                  → port 3005
+│   ├── cmd/
+│   │   ├── go-api/            # the real server binary
+│   │   └── concurrency-demo/  # standalone goroutines/channels demo
+│   └── internal/
+│       ├── items/              # Item, Store, validated input structs
+│       ├── concurrency/         # FanOut — goroutines + WaitGroup + channel
+│       └── api/                 # chi router + HTTP handlers
 ├── docs/            # Per-chapter documentation
-│   └── go.md
+│   └── go/
+│       ├── README.md          # Chapter 1 index
+│       ├── 01-basics.md       # Part 1 — Go language basics
+│       ├── 02-concurrency.md  # Part 2 — Goroutines, WaitGroup, channels
+│       ├── 03-testing.md      # Part 3 — testing, testify, httptest
+│       └── 04-api.md          # Part 4 — the CRUD API
 └── scripts/
     └── start-servers.sh  # Starts all tutorial servers (Ctrl-C to stop all)
 ```
@@ -73,30 +85,18 @@ Then open **http://localhost:3000** in your browser.
 >
 > You can also start each server manually:
 > - Next.js: `npm run dev` → http://localhost:3000
-> - Go: `cd go-api && go run .` → http://localhost:3005
+> - Go: `cd go-api && go build -o bin/go-api ./cmd/go-api && ./bin/go-api` → http://localhost:3005 (or `go run ./cmd/go-api` for quick iteration)
 
 ---
 
 ## Chapter 1 — Go
 
-If you're new to Go, **start with [docs/go.md](docs/go.md)** — it's written specifically for TypeScript/Python developers and covers, in order:
+If you're new to Go, **start with [docs/go/README.md](docs/go/README.md)** — it's written specifically for TypeScript/Python developers, split into four progressively more advanced parts:
 
-**Part 1 — Go language basics**, explained by comparison to what you already know:
-- Why Go looks and behaves differently from TS/Python (compiled vs. interpreted, static typing, etc.)
-- Packages, variables, zero values, and `:=`
-- Functions with multiple return values
-- Error handling without exceptions (`if err != nil`, no `try`/`catch`)
-- Structs and methods (Go's alternative to classes)
-- Interfaces (structural typing, satisfied implicitly)
-- Slices and maps
-- **Goroutines** — Go's lightweight concurrency primitive, and how it differs from JS's event loop and Python's `asyncio`/GIL
-- Struct tags — how Go expresses metadata like JSON field names and validation rules
-
-**Part 2 — The CRUD API**, built with [chi](https://github.com/go-chi/chi) (a lightweight HTTP router) and [go-playground/validator](https://github.com/go-playground/validator) (struct-tag-based request validation):
-- Project setup with Go modules
-- How the router, handlers, and in-memory store work
-- Request validation
-- How the Next.js UI talks to the Go server
+1. **[Go Language Basics](docs/go/01-basics.md)** — why Go looks and behaves differently from TS/Python, packages/variables/zero values, functions with multiple return values, error handling without exceptions, `defer`, structs and methods, interfaces, slices/maps, and struct tags.
+2. **[Concurrency](docs/go/02-concurrency.md)** — goroutines, `sync.WaitGroup`, and channels, demonstrated in a small standalone program (`go run ./cmd/concurrency-demo` in `go-api/`) before they're used for real in the API. Also introduces the `cmd/`/`internal/` project layout.
+3. **[Testing](docs/go/03-testing.md)** — the `testing` package, table-driven tests, `testify`'s `assert`/`require`, and `httptest` for testing HTTP handlers.
+4. **[The CRUD API](docs/go/04-api.md)** — built with [chi](https://github.com/go-chi/chi) (a lightweight HTTP router) and [go-playground/validator](https://github.com/go-playground/validator) (struct-tag-based request validation), composing everything from the earlier parts — including a concurrency showcase endpoint (`GET /api/items/{id}/enrich`) and running the server as a compiled binary with graceful shutdown, instead of `go run`.
 
 Quick test with `curl` once the server is running:
 
@@ -106,17 +106,7 @@ curl http://localhost:3005/api/items
 curl -X POST http://localhost:3005/api/items \
   -H "Content-Type: application/json" \
   -d '{"name":"Go Item","description":"Created via curl"}'
+
+# Concurrency showcase — fans out 3 checks concurrently, see docs/go/02-concurrency.md
+curl http://localhost:3005/api/items/1/enrich
 ```
-
----
-
-## Adding a New Chapter
-
-This project is set up to grow one language at a time. To add the next chapter (e.g. Rust):
-
-1. Create a new API project (e.g. `rust-api/`) on its own port.
-2. Add a new CRUD component under `app/components/` (e.g. `RustCrud.tsx`), following the pattern in `app/components/GoCrud.tsx`.
-3. Add the new tab to the `MainTab` type and `TABS` array in `app/components/TabNavigation.tsx`.
-4. Render the new component conditionally in `app/page.tsx`, following the existing `go-crud` example.
-5. Add a new doc file under `docs/` (e.g. `docs/rust.md`), written the same way as `docs/go.md`: language fundamentals first (compared to whatever the reader already knows), then the API walkthrough. Link it from this README.
-6. Add the new server to `scripts/start-servers.sh` so `./scripts/start-servers.sh` starts it alongside the others.

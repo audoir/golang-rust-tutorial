@@ -1,4 +1,4 @@
-package main
+package items
 
 import (
 	"strings"
@@ -6,9 +6,9 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// validate is a single shared validator instance — it is defined once and
+// Validate is a single shared validator instance — it is defined once and
 // reused for every request.
-var validate = validator.New()
+var Validate = validator.New()
 
 // CreateItemInput describes the shape of a valid "create" request body.
 // Struct tags describe the validation rules declaratively — no separate
@@ -48,10 +48,10 @@ func (p *PatchItemInput) Sanitize() {
 	}
 }
 
-// firstValidationError extracts a single human-readable message from the
+// FirstValidationError extracts a single human-readable message from the
 // first failing field, so the client gets one clean message instead of a
 // raw Go error value.
-func firstValidationError(err error) string {
+func FirstValidationError(err error) string {
 	verrs, ok := err.(validator.ValidationErrors)
 	if !ok || len(verrs) == 0 {
 		return "Validation error"

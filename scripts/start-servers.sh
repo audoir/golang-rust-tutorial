@@ -26,8 +26,14 @@ echo "▶ Starting Next.js dev server on http://localhost:3000 ..."
 PIDS+=($!)
 
 # ── Go (port 3005) ─────────────────────────────────────────────────────────────
+# Build the binary first, then run it directly (not `go run .`) — this is the
+# real deployment workflow, and it's required for the server's graceful
+# shutdown (SIGINT/SIGTERM handling) to work correctly. See
+# docs/go/04-api.md#running-as-a-real-binary-graceful-shutdown.
+echo "▶ Building Go server ..."
+(cd "$REPO_ROOT/go-api" && go build -o bin/go-api ./cmd/go-api)
 echo "▶ Starting Go server on http://localhost:3005 ..."
-(cd "$REPO_ROOT/go-api" && go run .) &
+(cd "$REPO_ROOT/go-api" && ./bin/go-api) &
 PIDS+=($!)
 
 echo ""
