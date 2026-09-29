@@ -59,32 +59,90 @@ for _, task := range tasks {
 wg.Wait() // blocks until the counter reaches zero
 ```
 
+- `for _, task := range tasks` — a `for range` loop discarding the index with the blank identifier `_`, since only the value is needed here; see [For Loops](01-basics.md#for-loops--gos-only-loop-keyword) if this syntax is new.
 - `wg.Add(1)` — increment the counter. Always call this *before* starting the goroutine, not inside it (otherwise `Wait()` might return before the goroutine even starts).
+- `go func(t Task) { ... }(task)` — a [function literal](01-basics.md#function-literals-anonymous-functions) started as a goroutine and called immediately with `task` passed in as `t`.
 - `wg.Done()` — decrement the counter. Almost always called via `defer` at the top of the goroutine's function, so it runs even if the function returns early or panics (see [Defer](01-basics.md#defer)).
 - `wg.Wait()` — blocks the calling goroutine until the counter is back to zero, i.e. until every `Done()` has been called.
-
-Note the loop variable capture: `go func(t Task) { ... }(task)` passes `task` in as a parameter rather than closing over the loop variable directly — this avoids a classic bug where every goroutine ends up seeing the same (final) value of a loop variable.
 
 ---
 
 ## Channels
 
-Channels (`chan T`) are Go's built-in tool for goroutines to communicate safely — a typed, one-directional-in-practice pipe for sending values between goroutines.
+Channels (`chan T`) are Go's built-in tool for goroutines to communicate safely — a typed, one-directional-in-practice pipe for sending values between goroutines. Every example below has one **sender** goroutine and one **receiver**, labeled in the code, so it's clear which side is doing what.
+
+### Unbuffered channels — sender and receiver block until they meet
+
+An **unbuffered** channel (`make(chan T)`) has no storage at all: a send only completes once a receiver is ready to take the value at that exact moment, and vice versa. It's as much a synchronization point as a data pipe.
 
 ```go
-ch := make(chan int)     // unbuffered channel
-go func() {
-	ch <- 353         // send (must happen in a goroutine, or this blocks forever)
-}()
-val := <-ch                // receive
-close(ch)                  // signal "no more values will be sent"
+ch := make(chan string) // unbuffered
 
-ch2 := make(chan int, 1)   // buffered channel — send doesn't block until the buffer is full
+go func() { // sender
+	fmt.Println("sender: about to send")
+	ch <- "hello" // blocks right here until a receiver is ready
+	fmt.Println("sender: done sending")
+}()
+
+time.Sleep(500 * time.Millisecond) // simulate the receiver being busy for a while
+fmt.Println("receiver: about to receive")
+msg := <-ch // receive — this is what unblocks the sender's `ch <- "hello"` above
+fmt.Println("receiver: got", msg)
 ```
 
-- An **unbuffered** channel (`make(chan T)`) blocks the sender until a receiver is ready, and blocks the receiver until a sender is ready — it's a synchronization point as much as a data pipe.
-- A **buffered** channel (`make(chan T, n)`) lets up to `n` sends happen without blocking, even if nothing has received yet — useful when you know exactly how many results are coming, which is exactly the case for the fan-out pattern below.
-- `for v := range ch` reads values from a channel until it's `close`d — this is how a receiver knows to stop waiting for "just one more" value.
+Running this prints, in this exact order:
+
+```
+sender: about to send
+                              (500ms pause — the sender is blocked here, waiting)
+receiver: about to receive
+receiver: got hello
+sender: done sending
+```
+
+- The sender goroutine reaches `ch <- "hello"` almost immediately, but **blocks there** — it can't finish the send until something receives.
+- Meanwhile the receiver is deliberately kept busy for 500ms (`time.Sleep`), so nothing is ready to receive yet.
+- Only once the receiver executes `msg := <-ch` does the send unblock — notice `"sender: done sending"` prints *last*, after the receive, proving the sender was stuck waiting the whole time.
+
+### Buffered channels — sends don't block until the buffer is full
+
+A **buffered** channel (`make(chan T, n)`) has room for `n` values in flight — a send only blocks once that buffer is full, so the sender doesn't need a receiver ready at the same instant.
+
+```go
+ch := make(chan int, 3) // buffered — capacity 3
+
+go func() { // sender
+	for _, n := range []int{1, 2, 3} {
+		fmt.Println("sender: sending", n)
+		ch <- n // doesn't block — the buffer has room for all 3
+	}
+	fmt.Println("sender: done sending, closing channel")
+	close(ch) // no more values coming — lets the receiver's range below terminate
+}()
+
+time.Sleep(500 * time.Millisecond) // give the sender time to finish all 3 sends before we receive anything
+fmt.Println("receiver: about to receive")
+for v := range ch { // receiver — reads 1, 2, 3 in order, then exits once ch is closed
+	fmt.Println("receiver: got", v)
+}
+```
+
+Running this prints, in this exact order:
+
+```
+sender: sending 1
+sender: sending 2
+sender: sending 3
+sender: done sending, closing channel
+                              (500ms pause is already over by the time the sender gets here)
+receiver: about to receive
+receiver: got 1
+receiver: got 2
+receiver: got 3
+```
+
+- All three sends complete — and the channel is closed — **before the receiver ever starts**, because the buffer had room for all 3 values. Contrast this with the unbuffered example above, where the sender couldn't finish sending until the receiver showed up.
+- `close(ch)` is what lets `for v := range ch` **terminate** after the third value instead of blocking forever waiting for "just one more" — this is exactly the mechanism `FanOut` relies on below.
 - Reading from or writing to a `nil` channel, or writing to a closed channel, blocks or panics respectively — channels are a sharp tool, used carefully.
 
 ---
@@ -137,7 +195,7 @@ Walking through why each piece is there:
 - The **`wg.Wait()` + `close(results)` happens in its own goroutine**, not in the main flow — if we called `wg.Wait()` directly before the `for range results` loop, we'd deadlock: `Wait()` would block forever waiting for goroutines that are themselves blocked trying to send on a full buffer that nothing is draining yet. Running the "wait, then close" step concurrently with the "receive results" loop avoids that.
 - `close(results)` is what lets `for result := range results` **terminate** instead of blocking forever waiting for "just one more" value.
 
-### Try it standalone
+### Try it
 
 ```bash
 cd go-api
@@ -152,7 +210,7 @@ go run ./cmd/concurrency-demo
 
 `FanOut` needs to be usable from two different places in this tutorial:
 
-1. **`go-api/cmd/concurrency-demo/main.go`** — a tiny standalone program, so the concurrency behavior is easy to see in isolation.
+1. **`go-api/cmd/concurrency-demo/main.go`** — the standalone demo above.
 2. **`go-api/internal/api/enrich_handler.go`** (see [Part 4](04-api.md)) — a real HTTP handler that fans out the exact same kind of checks for real.
 
 A Go package can only have **one** `func main()`, so two runnable programs in the same module need two separate `package main` files — and the code they share (`FanOut`) needs to live somewhere both of them can import it from. This is exactly what Go's `cmd/` + `internal/` convention is for:
@@ -164,7 +222,7 @@ A Go package can only have **one** `func main()`, so two runnable programs in th
 go-api/
 ├── cmd/
 │   ├── go-api/               # func main() — the real server
-│   └── concurrency-demo/     # func main() — the standalone demo
+│   └── concurrency-demo/     # func main() — the demo binary
 └── internal/
     ├── concurrency/          # FanOut — imported by both binaries above
     ├── items/                # Item, Store, validated input structs
@@ -177,7 +235,7 @@ You'll see this same shape again in [Part 4](04-api.md), where `internal/api` co
 
 ## Try It Yourself
 
-1. From `go-api/`, run the standalone demo and note the total elapsed time printed at the end:
+1. From `go-api/`, run the demo and note the total elapsed time printed at the end:
    ```bash
    go run ./cmd/concurrency-demo
    ```

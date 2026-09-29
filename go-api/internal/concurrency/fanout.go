@@ -4,8 +4,7 @@
 //
 // It's deliberately kept separate from any HTTP or CLI concerns so it can be
 // used two different ways in this tutorial:
-//   - cmd/concurrency-demo runs it standalone, with nothing else going on,
-//     to make the concurrency behavior easy to see in isolation.
+//   - cmd/concurrency-demo runs it standalone.
 //   - internal/api composes it into a real HTTP handler
 //     (GET /api/items/{id}/enrich), showing the exact same building block
 //     doing real work inside a bigger program.

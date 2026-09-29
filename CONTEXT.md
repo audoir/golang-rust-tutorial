@@ -127,7 +127,7 @@ Each section introduces a Go concept by direct comparison to TS/Python equivalen
 
 ### `02-concurrency.md` — Part 2: Concurrency (NEW — standalone, no HTTP)
 - Goroutines (comparison table vs. JS event loop/Promises and Python asyncio/GIL; true multi-core parallelism)
-- The `sync.WaitGroup` (`Add`/`Done`/`Wait`, loop-variable-capture gotcha)
+- The `sync.WaitGroup` (`Add`/`Done`/`Wait`)
 - Channels (unbuffered vs. buffered, `close`, `range`)
 - **Putting it together: FanOut** — walks through `go-api/internal/concurrency/fanout.go` line by line, including *why* the `wg.Wait()`+`close()` step must run in its own goroutine (deadlock otherwise)
 - **`cmd/` and `internal/`: organizing a real Go project** — explains why `FanOut` had to move into its own importable package (two `func main()`s can't coexist), and that `internal/` is a compiler-enforced privacy boundary with no clean TS/Python equivalent

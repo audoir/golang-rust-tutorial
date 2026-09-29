@@ -1,16 +1,12 @@
-// Command concurrency-demo is a small, standalone program — no HTTP server,
-// no chi router, nothing else going on — that demonstrates goroutines,
-// sync.WaitGroup, and channels in isolation, via
-// go-api/internal/concurrency.FanOut.
+// Command concurrency-demo is a standalone program demonstrating goroutines,
+// sync.WaitGroup, and channels via go-api/internal/concurrency.FanOut.
 //
 // Run it directly:
 //
 //	go run ./cmd/concurrency-demo
 //
 // See docs/go/02-concurrency.md for the full walkthrough. The same FanOut
-// function is reused for real in internal/api/enrich_handler.go — this demo
-// is meant to make the concurrency behavior easy to see before it's buried
-// inside a real HTTP handler.
+// function is reused for real in internal/api/enrich_handler.go.
 package main
 
 import (

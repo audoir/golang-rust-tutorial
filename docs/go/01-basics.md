@@ -8,7 +8,9 @@
 - [Setting Up](#setting-up)
 - [Packages and `main`](#packages-and-main)
 - [Variables, Types, and `:=`](#variables-types-and-)
+- [For Loops — Go's Only Loop Keyword](#for-loops--gos-only-loop-keyword)
 - [Functions and Multiple Return Values](#functions-and-multiple-return-values)
+- [Function Literals (Anonymous Functions)](#function-literals-anonymous-functions)
 - [Error Handling — No Exceptions](#error-handling--no-exceptions)
 - [Defer](#defer)
 - [Structs — Go's "Classes"](#structs--gos-classes)
@@ -106,6 +108,42 @@ This is why you'll see `nil` used as Go's rough equivalent of `null`/`None`, but
 
 ---
 
+## For Loops — Go's Only Loop Keyword
+
+Go has exactly one looping keyword, `for` — there's no separate `while`, `do...while`, or `foreach`. It covers four shapes:
+
+```go
+for i := 0; i < 3; i++ {   // classic three-clause form, like JS/TS/Python's `for i in range(...)`
+	fmt.Println(i)
+}
+
+n := 0
+for n < 3 {                // condition only — this is Go's `while`
+	n++
+}
+
+for {                       // no condition at all — infinite loop, exited with `break`/`return`
+	break
+}
+
+names := []string{"alice", "bob"}
+for i, name := range names { // `range` iterates a slice, yielding (index, value)
+	fmt.Println(i, name)
+}
+```
+
+- `for range` also works on maps (yielding `key, value`), strings (yielding byte index, rune), and channels (yielding just the received value — see [Channels](02-concurrency.md#channels)).
+- If you don't need one of the two values `range` yields, Go's convention is to discard it with the **blank identifier `_`** rather than naming a variable you'll never use — recall from [Packages and `main`](#packages-and-main) that an unused variable is a compile error, so `_` is how you explicitly say "I know this exists, I'm ignoring it":
+
+  ```go
+  for _, task := range tasks {
+  	fmt.Println(task) // only the value is needed, so the index is discarded
+  }
+  ```
+
+  You'll see this exact pattern in `go-api/internal/concurrency/fanout.go` and throughout this project's tests.
+
+---
 
 ## Functions and Multiple Return Values
 
@@ -125,7 +163,40 @@ result, err := divide(10, 2)
 ```
 
 - Parameter types come **after** the name (`a int`, not `int a`) — the reverse of TypeScript's `a: number`.
-- Go functions can return **multiple values** — there's no need to bundle them into an object/tuple the way you might in TS (`{ result, error }`) or Python (`return result, error`). This is used everywhere in Go, most importantly for error handling (next section).
+- Go functions can return **multiple values** — there's no need to bundle them into an object/tuple the way you might in TS (`{ result, error }`) or Python (`return result, error`). This is used everywhere in Go, most importantly for [error handling](#error-handling--no-exceptions).
+
+---
+
+## Function Literals (Anonymous Functions)
+
+Functions are values in Go, just like in JS/TS or Python. A **function literal** is an unnamed `func` written inline — you can assign it to a variable, pass it as an argument, or call it immediately:
+
+```go
+add := func(a, b int) int { // a function literal assigned to a variable
+	return a + b
+}
+fmt.Println(add(2, 3)) // 5
+
+func(msg string) { // a function literal called immediately, right where it's defined
+	fmt.Println(msg)
+}("hello") // <- this trailing (...) is the call, with "hello" passed as msg
+```
+
+That last shape — define a function literal and call it in the same expression — is Go's equivalent of a JavaScript IIFE (`(function() { ... })()`). You'll see it combined with `go` in [The sync.WaitGroup](02-concurrency.md#the-syncwaitgroup):
+
+```go
+go func(t Task) {
+	t.Run()
+}(task)
+```
+
+Reading this left to right:
+
+- `go` applies to the entire statement that follows it — it means "run this whole call as a new goroutine," not just "run `func`."
+- `func(t Task) { t.Run() }` is the function literal itself — an anonymous function taking one `Task` parameter.
+- `(task)` is the call — it immediately invokes that function literal, passing the current loop variable `task` in as the parameter `t`.
+
+So the trailing `(task)` belongs to the function literal, not to `go`: the full expression is "call this anonymous function with `task`," and `go` just tells Go to run that call on its own goroutine instead of blocking.
 
 ---
 
